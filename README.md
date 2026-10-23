@@ -14,7 +14,7 @@ An always-on protocol that makes the main model plan and write exact instruction
 The protocol text is in `token-saver/protocol.md` and is injected at every session start by a hook (needs Node.js).
 
 ## Install
-Without the `claude` CLI, add this to `~/.claude/settings.json` (use `"source": "github", "repo": "<owner>/<repo>"` on other machines):
+Without the `claude` CLI, add this to `~/.claude/settings.json` (use `"source": "github", "repo": "Yousef-Hegazy/claude-token-effeciency"` on other machines):
 ```json
 {
   "extraKnownMarketplaces": {
@@ -29,9 +29,9 @@ With the CLI, on this machine (from a local folder):
 claude plugin marketplace add C:\Users\GNM\claude-plugins
 claude plugin install token-saver@gnm-tools
 ```
-On another machine, push this folder to a GitHub repo, then:
+On another machine:
 ```
-claude plugin marketplace add <owner>/<repo>
+claude plugin marketplace add Yousef-Hegazy/claude-token-effeciency
 claude plugin install token-saver@gnm-tools
 ```
 Restart Claude Code after installing.
