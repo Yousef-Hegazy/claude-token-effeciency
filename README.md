@@ -65,10 +65,29 @@ On Windows, escape backslashes: `"C:\\Users\\<you>\\claude-plugins"`. Edits to t
 ## Avoid duplicate agents
 If you already have personal agents with the same jobs in `~/.claude/agents/` (for example `searcher.md` or `micro-editor.md`), move them out of that folder, e.g. into `~/.claude/agents-backup/`. Otherwise Claude may pick the old ones instead.
 
+## If Haiku 5.5 isn't available
+Four agents use the `haiku` alias, which points to the newest Haiku. If your account or provider (Bedrock, Vertex, Foundry, a gateway, an org allowlist) doesn't have it, the plugin falls back in this order:
+
+1. **A cheaper model you configure** (recommended). Point the `haiku` alias at any model you do have. Add an `env` block to your `settings.json`:
+   ```json
+   { "env": { "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5" } }
+   ```
+   Use your provider's ID format, for example `us.anthropic.claude-haiku-4-5-20251001-v1:0` on Bedrock or `claude-haiku-4-5@20251001` on Vertex.
+   **Open models:** if you run Claude Code through an Anthropic-compatible gateway (for example LiteLLM, with `ANTHROPIC_BASE_URL` pointing at it), set `ANTHROPIC_DEFAULT_HAIKU_MODEL` to the gateway's model name, e.g. a Qwen, DeepSeek or Llama model. The agents then run on that model.
+2. **Sonnet, automatically.** With nothing configured, when a Haiku agent fails because the model is missing, Claude retries it once on Sonnet and keeps using Sonnet for the rest of the session. It tells you once when this happens.
+3. **The main model.** If Sonnet is missing too, the main model does the work itself.
+
+If you know Haiku is missing and don't want to set up another model, add `"TOKEN_SAVER_NO_HAIKU": "1"` to the same `env` block. Claude then goes straight to Sonnet and skips the failing first try.
+
+Restart Claude Code after changing `settings.json`.
+
 ## Update
-- CLI: `claude plugin marketplace update gnm-tools`, then restart.
+- CLI: `claude plugin update token-saver@gnm-tools`, then restart Claude Code (or run `/reload-plugins` in a session). `claude plugin marketplace update` alone only refreshes the listing and does **not** update the installed plugin.
+- In an interactive terminal: `/plugin` → Marketplaces → `gnm-tools` → Update marketplace (this also updates the plugin).
 - Local clone (Option C): `git pull` in the clone, then start a new session.
-- Settings (Option B): Claude Code keeps its own copy of the repo; refresh it with the CLI command above, or from `/plugin` → Marketplaces in an interactive terminal.
+
+### Upgrading from 1.0.0 to 1.1.0
+1.1.0 adds the Haiku fallback above. Run the update command for your setup, then restart. Nothing else is needed. The new `env` settings are optional.
 
 ## Uninstall
 - CLI: `claude plugin uninstall token-saver@gnm-tools`

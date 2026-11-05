@@ -24,6 +24,13 @@ No background story, no "figure out the best way", no requests to reason or plan
 - Edit/build: "path: lines changed" plus one line per notable decision.
 - Verify: PASS, or the first 3 errors as file:line + message.
 
+## Model fallback
+- A spawn that errors because its model is unavailable (model not found, not available, no access, 403/404) is a model problem, not a task failure: it does not count toward the "fails twice" rule.
+- Haiku agent (`searcher`, `micro-editor`, `builder`, `verifier`) unavailable: retry the same agent once with the Agent tool's `model: "sonnet"` override. If that also fails, the main model does the task itself.
+- `builder-pro` (Sonnet) unavailable: the main model does the task itself.
+- Remember it for the rest of the session: skip the model that failed (pass `model: "sonnet"` on later Haiku-agent spawns, or do the work directly), instead of hitting the same error again.
+- The first time this happens, tell the user in one line: Haiku is not available on this account, and they can point the `haiku` alias at a cheaper model they do have (an older Haiku, or an open model through a gateway) with the `ANTHROPIC_DEFAULT_HAIKU_MODEL` setting; see the token-saver README.
+
 ## Other rules
 - Independent searches or edits on different files are dispatched in one message, in parallel.
 - After delegated edits the main model runs the verifier when the project has a build/test command, and checks only a short diff summary (git diff --stat, spot-check risky hunks), never whole files or full large diffs.
