@@ -1,6 +1,6 @@
 {
   "name": "token-saver",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Token-efficient delegation: the main model reasons and writes exact specs; Haiku/Sonnet subagents search, edit, build and verify.",
   "author": {
     "name": "GNM"

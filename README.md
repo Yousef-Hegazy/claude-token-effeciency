@@ -5,12 +5,11 @@ An always-on protocol that has the main model plan and write exact instructions,
 | Agent | Model | Job |
 |---|---|---|
 | `token-saver:searcher` | Haiku, low | Find files, symbols, call sites |
-| `token-saver:micro-editor` | Haiku, medium | Small exact edit in one file |
-| `token-saver:builder` | Haiku, medium | Larger edits / new files where the spec is the answer |
+| `token-saver:builder` | Haiku, medium | Any edit or new file where the spec is the answer, from one line to many files |
 | `token-saver:builder-pro` | Sonnet, medium | Larger edits that need logic worked out (or when `builder` fails) |
 | `token-saver:verifier` | Haiku, low | Run build/lint/tests, return PASS or the first 3 errors |
 
-The rules live in [`token-saver/protocol.md`](token-saver/protocol.md). A `SessionStart` hook injects them into every session.
+The rules live in [`token-saver/protocol.md`](token-saver/protocol.md). A `SessionStart` hook injects them into every session, and a `PreToolUse` hook [enforces](#enforcement) them on the main model.
 
 ## Requirements
 - Claude Code (CLI, desktop app or IDE extension)
@@ -58,12 +57,12 @@ On Windows, escape backslashes: `"C:\\Users\\<you>\\claude-plugins"`. Edits to t
 
 ## Check that it works
 1. Start a **new** session.
-2. Run `/agents`: the five `token-saver:*` agents should be listed.
+2. Run `/agents`: the four `token-saver:*` agents should be listed.
 3. Ask something like "where is X defined?" and the main model should hand it to `token-saver:searcher`.
 4. Optional hook test, run from the repo folder: `node token-saver/hooks/inject.js` should print JSON that starts with `{"hookSpecificOutput"`.
 
 ## Avoid duplicate agents
-If you already have personal agents with the same jobs in `~/.claude/agents/` (for example `searcher.md` or `micro-editor.md`), move them out of that folder, e.g. into `~/.claude/agents-backup/`. Otherwise Claude may pick the old ones instead.
+If you already have personal agents with the same jobs in `~/.claude/agents/` (for example `searcher.md` or `builder.md`), move them out of that folder, e.g. into `~/.claude/agents-backup/`. Otherwise Claude may pick the old ones instead.
 
 ## If Haiku 5.5 isn't available
 Four agents use the `haiku` alias, which points to the newest Haiku. If your account or provider (Bedrock, Vertex, Foundry, a gateway, an org allowlist) doesn't have it, the plugin falls back in this order:
@@ -86,8 +85,23 @@ Restart Claude Code after changing `settings.json`.
 - In an interactive terminal: `/plugin` → Marketplaces → `gnm-tools` → Update marketplace (this also updates the plugin).
 - Local clone (Option C): `git pull` in the clone, then start a new session.
 
-### Upgrading from 1.0.0 to 1.1.0
-1.1.0 adds the Haiku fallback above. Run the update command for your setup, then restart. Nothing else is needed. The new `env` settings are optional.
+### What changed
+- **1.2.0:**
+  - No turn limits, so long or fully automated tasks are never cut off midway. Each agent instead stops itself with "BLOCKED" when it is stuck (the same step failing 3 times, or no progress). A stopped agent is continued rather than restarted.
+  - `micro-editor` is merged into `builder`: Haiku now takes every edit where the spec holds the answer, at any size. If you have `token-saver:micro-editor` in your own prompts or settings, use `token-saver:builder`.
+  - New enforcement hook so strong models (Opus and up) can't quietly skip delegation. See [Enforcement](#enforcement).
+- **1.1.0:** the Haiku fallback above.
+
+To upgrade from any earlier version, run the update command for your setup, then restart. Nothing else is needed. The `env` settings are optional.
+
+## Enforcement
+Strong models sometimes decide doing the work themselves is "better" and skip the agents. A `PreToolUse` hook catches this on the main model only (never inside agents):
+
+- The 3rd search in a row (Grep, Glob, or a `grep`/`rg`/`find` shell command) is blocked with a one-line note to use `token-saver:searcher`.
+- Writing more than 60 lines, or an edit adding more than 30 lines, to a project file is blocked with a note to use `token-saver:builder`. Files outside the project and under `.claude/` (plans, memory) are never blocked.
+- If the model has a good reason, it repeats the exact same call and it goes through, so it never gets stuck.
+
+It adds no tokens unless it blocks something, and then only one line. Unlike a per-prompt reminder, it costs nothing on turns where the model follows the rules. To turn it off, add `"TOKEN_SAVER_ENFORCE": "off"` to the `env` block in `settings.json`. The limits are constants at the top of `token-saver/hooks/enforce.js`.
 
 ## Uninstall
 - CLI: `claude plugin uninstall token-saver@gnm-tools`
@@ -95,4 +109,4 @@ Restart Claude Code after changing `settings.json`.
 
 ## Customize
 - Routing rules and thresholds: `token-saver/protocol.md`
-- Agent models, effort and turn limits: frontmatter in `token-saver/agents/*.md`
+- Agent models and effort: frontmatter in `token-saver/agents/*.md`. Agents have no turn limit by default. To add a hard cap, add `maxTurns: <n>` to an agent's frontmatter (it counts tool-use rounds).

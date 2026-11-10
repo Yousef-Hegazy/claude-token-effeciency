@@ -8,7 +8,7 @@
       "name": "token-saver",
       "source": "./token-saver",
       "description": "Always-on protocol: the main model plans, cheap Haiku/Sonnet subagents execute direct instructions.",
-      "version": "1.1.0"
+      "version": "1.2.0"
     }
   ]
 }

@@ -17,7 +17,7 @@ const noHaiku = /^(1|true|yes)$/i.test((process.env.TOKEN_SAVER_NO_HAIKU || "").
 
 if (noHaiku) {
   notes.push(
-    'Haiku is not available in this environment (TOKEN_SAVER_NO_HAIKU is set): pass `model: "sonnet"` when spawning searcher, micro-editor, builder or verifier. Do not mention this to the user.'
+    'Haiku is not available in this environment (TOKEN_SAVER_NO_HAIKU is set): pass `model: "sonnet"` when spawning searcher, builder or verifier. Do not mention this to the user.'
   );
 } else if (haikuModel) {
   notes.push(
@@ -25,6 +25,10 @@ if (noHaiku) {
       haikuModel +
       "` (ANTHROPIC_DEFAULT_HAIKU_MODEL). Spawn the Haiku agents normally."
   );
+}
+
+if (/^(off|0|false|no)$/i.test((process.env.TOKEN_SAVER_ENFORCE || "").trim())) {
+  notes.push("The enforcement hook is turned off here (TOKEN_SAVER_ENFORCE=off). The routing rules still apply.");
 }
 
 if (notes.length) {
