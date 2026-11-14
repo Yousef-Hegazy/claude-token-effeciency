@@ -5,8 +5,8 @@ An always-on protocol that has the main model plan and write exact instructions,
 | Agent | Model | Job |
 |---|---|---|
 | `token-saver:searcher` | Haiku, low | Find files, symbols, call sites |
-| `token-saver:builder` | Haiku, medium | Any edit or new file where the spec is the answer, from one line to many files |
-| `token-saver:builder-pro` | Sonnet, medium | Larger edits that need logic worked out (or when `builder` fails) |
+| `token-saver:builder` | Haiku, medium | Default for implementation: any edit or new file that follows the spec or an existing pattern, from one line to many files |
+| `token-saver:builder-pro` | Sonnet, low | Only genuinely new logic the spec leaves open (or when `builder` fails twice) |
 | `token-saver:verifier` | Haiku, low | Run build/lint/tests, return PASS or the first 3 errors |
 
 The rules live in [`token-saver/protocol.md`](token-saver/protocol.md). A `SessionStart` hook injects them into every session, and a `PreToolUse` hook [enforces](#enforcement) them on the main model.
@@ -86,6 +86,10 @@ Restart Claude Code after changing `settings.json`.
 - Local clone (Option C): `git pull` in the clone, then start a new session.
 
 ### What changed
+- **1.3.0:** cuts `builder-pro` usage, which was the largest share of subagent tokens:
+  - `builder` (Haiku) is now the default for all implementation, including new screens or modules modeled on existing ones. `builder-pro` (Sonnet) is only for genuinely new logic, or after `builder` has failed twice. A failed `builder` is first sent its error to fix, instead of escalating right away.
+  - `builder-pro` runs at low effort (most of its output was reasoning, not code). Set `effort: medium` in `token-saver/agents/builder-pro.md` if you want it back.
+  - Builders read only the files the spec names, read large files by range, never re-read a file, and don't explore the codebase. The main model now passes along what was already found, so nothing is searched twice.
 - **1.2.0:**
   - No turn limits, so long or fully automated tasks are never cut off midway. Each agent instead stops itself with "BLOCKED" when it is stuck (the same step failing 3 times, or no progress). A stopped agent is continued rather than restarted.
   - `micro-editor` is merged into `builder`: Haiku now takes every edit where the spec holds the answer, at any size. If you have `token-saver:micro-editor` in your own prompts or settings, use `token-saver:builder`.

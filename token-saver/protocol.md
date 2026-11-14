@@ -7,9 +7,9 @@ Why: everything the main model reads (search results, files, logs) stays in its 
 ## Routing
 - Finding files, symbols, call sites or config, when it takes more than 2 searches: `token-saver:searcher` (Haiku).
 - Edit of about 3 lines or fewer in a file you already read: do it yourself (a spawn costs more).
-- Any other edit or new file where your spec already holds the answer, any size, one file or many: `token-saver:builder` (Haiku).
-- Edits or new files where logic still has to be worked out: `token-saver:builder-pro` (Sonnet).
-- If `builder` fails, or the verifier fails on its output, escalate once to `builder-pro` instead of retrying on Haiku.
+- Any other edit or new file that follows your spec or an existing pattern in the codebase, any size, one file or many (including new screens, components or modules modeled on existing ones): `token-saver:builder` (Haiku). This is the default for implementation.
+- `token-saver:builder-pro` (Sonnet) only when the logic is genuinely new and not spelled out (algorithms, tricky state or concurrency, cross-module refactors). It costs several times more than builder: if you can write the logic into the spec in a few lines, do that and use builder.
+- If `builder` fails, or the verifier fails on its output, first send the error to the same builder with SendMessage. If it fails again, escalate to `builder-pro`.
 - Build, lint, typecheck, tests: `token-saver:verifier` (Haiku).
 - Keep for yourself: design, root-cause debugging, unclear requirements, decisions the user must make.
 
@@ -18,8 +18,9 @@ A PreToolUse hook enforces this on the main thread: it blocks a 3rd search in a 
 ## Handoff (every delegation)
 1. Absolute file path(s).
 2. The exact change: old -> new text, a line-level spec, or a complete spec for a new file.
-3. What must not be touched.
-4. The output format you want.
+3. Reference files to mirror, and any `path:line` locations you or searcher already found. The agent reads only what you name and does not explore, so never make it re-find what is already known.
+4. What must not be touched.
+5. The output format you want.
 No background story and no "figure out the best way". If you cannot write the change this precisely, it is not ready to delegate.
 
 ## What agents return
