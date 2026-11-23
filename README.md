@@ -9,7 +9,7 @@ An always-on protocol that has the main model plan and write exact instructions,
 | `token-saver:builder-pro` | Sonnet, low | Only genuinely new logic the spec leaves open (or when `builder` fails twice) |
 | `token-saver:verifier` | Haiku, low | Run build/lint/tests, return PASS or the first 3 errors |
 
-The rules live in [`token-saver/protocol.md`](token-saver/protocol.md). A `SessionStart` hook injects them into every session, and a `PreToolUse` hook [enforces](#enforcement) them on the main model.
+The rules live in [`token-saver/protocol.md`](token-saver/protocol.md). A `SessionStart` hook injects them into every session.
 
 ## Requirements
 - Claude Code (CLI, desktop app or IDE extension)
@@ -86,6 +86,7 @@ Restart Claude Code after changing `settings.json`.
 - Local clone (Option C): `git pull` in the clone, then start a new session.
 
 ### What changed
+- **1.4.0:** removes the enforcement hook added in 1.2.0. It cost more than it saved: it fires after the model has already written the tool call, so a blocked file write had to be sent again in full, sometimes two or three times. `TOKEN_SAVER_ENFORCE` no longer does anything and can be removed from your settings.
 - **1.3.0:** cuts `builder-pro` usage, which was the largest share of subagent tokens:
   - `builder` (Haiku) is now the default for all implementation, including new screens or modules modeled on existing ones. `builder-pro` (Sonnet) is only for genuinely new logic, or after `builder` has failed twice. A failed `builder` is first sent its error to fix, instead of escalating right away.
   - `builder-pro` runs at low effort (most of its output was reasoning, not code). Set `effort: medium` in `token-saver/agents/builder-pro.md` if you want it back.
@@ -93,19 +94,13 @@ Restart Claude Code after changing `settings.json`.
 - **1.2.0:**
   - No turn limits, so long or fully automated tasks are never cut off midway. Each agent instead stops itself with "BLOCKED" when it is stuck (the same step failing 3 times, or no progress). A stopped agent is continued rather than restarted.
   - `micro-editor` is merged into `builder`: Haiku now takes every edit where the spec holds the answer, at any size. If you have `token-saver:micro-editor` in your own prompts or settings, use `token-saver:builder`.
-  - New enforcement hook so strong models (Opus and up) can't quietly skip delegation. See [Enforcement](#enforcement).
+  - An enforcement hook that blocked the main model's repeated searches and large writes (removed in 1.4.0).
 - **1.1.0:** the Haiku fallback above.
 
 To upgrade from any earlier version, run the update command for your setup, then restart. Nothing else is needed. The `env` settings are optional.
 
-## Enforcement
-Strong models sometimes decide doing the work themselves is "better" and skip the agents. A `PreToolUse` hook catches this on the main model only (never inside agents):
-
-- The 3rd search in a row (Grep, Glob, or a `grep`/`rg`/`find` shell command) is blocked with a one-line note to use `token-saver:searcher`.
-- Writing more than 60 lines, or an edit adding more than 30 lines, to a project file is blocked with a note to use `token-saver:builder`. Files outside the project and under `.claude/` (plans, memory) are never blocked.
-- If the model has a good reason, it repeats the exact same call and it goes through, so it never gets stuck.
-
-It adds no tokens unless it blocks something, and then only one line. Unlike a per-prompt reminder, it costs nothing on turns where the model follows the rules. To turn it off, add `"TOKEN_SAVER_ENFORCE": "off"` to the `env` block in `settings.json`. The limits are constants at the top of `token-saver/hooks/enforce.js`.
+## If the main model skips the agents
+Strong models (Opus and up) sometimes do the work themselves even though the protocol is loaded. Say "use token-saver" and it will route the task to the agents. There is no enforcement hook, on purpose: a hook can only act after the model has already written its tool call, so blocking it wastes the tokens already spent (see 1.4.0 below).
 
 ## Uninstall
 - CLI: `claude plugin uninstall token-saver@gnm-tools`

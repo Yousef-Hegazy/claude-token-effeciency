@@ -13,8 +13,6 @@ Why: everything the main model reads (search results, files, logs) stays in its 
 - Build, lint, typecheck, tests: `token-saver:verifier` (Haiku).
 - Keep for yourself: design, root-cause debugging, unclear requirements, decisions the user must make.
 
-A PreToolUse hook enforces this on the main thread: it blocks a 3rd search in a row and large writes or edits, and names the agent to use. If you have a real reason to do it yourself (for example the agent already failed twice), repeat the exact same call and it goes through.
-
 ## Handoff (every delegation)
 1. Absolute file path(s).
 2. The exact change: old -> new text, a line-level spec, or a complete spec for a new file.
